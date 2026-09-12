@@ -163,15 +163,15 @@ void gameLoop(){
 	ballSubPos[0] += ballVel[0]; ballSubPos[1] += ballVel[1]; ballSubPos[2] += ballVel[2]; 
 	if(!between(ballSubPos[0], -255, 255)){
 		ballPos.x += negate(ballSubPos[0] < 0);
-		ballSubPos[0] -= 256 * negate(ballSubPos[0] < 0);
+		ballSubPos[0] -= (abs(ballSubPos[0]) >> 8) * 256 * negate(ballSubPos[0] < 0);
 	}
 	if(!between(ballSubPos[1], -255, 255)){
 		ballY += negate(ballSubPos[1] < 0);
-		ballSubPos[1] -= 256 * negate(ballSubPos[1] < 0);
+		ballSubPos[1] -= (abs(ballSubPos[1]) >> 8) * 256 * negate(ballSubPos[1] < 0);
 	}
 	if(!between(ballSubPos[2], -255, 255)){
 		ballPos.y += negate(ballSubPos[2] < 0);
-		ballSubPos[2] -= 256 * negate(ballSubPos[2] < 0);
+		ballSubPos[2] -= (abs(ballSubPos[2]) >> 8) * 256 * negate(ballSubPos[2] < 0);
 	}
 
 	if(!between(ballPos.x, 12, 308)){
