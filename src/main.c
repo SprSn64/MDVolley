@@ -17,13 +17,13 @@ s8 negate(u8 bool){
 	return 1 - 2 * bool;
 }
 
-u16 inputDown = 0; u16 inputPressed = 0;
+u16 inputDown[4] = {0, 0, 0, 0}; u16 inputPressed[4] = {0, 0, 0, 0};
 
 void inputHandler(u16 joy, u16 change, u16 state){
-	//if(joy > JOY_4) return;
-	if(joy != JOY_1) return;
-	inputPressed = state & change;
-	inputDown = state;
+	if(joy > JOY_4) return;
+	//if(joy != JOY_1) return;
+	inputPressed[joy] = state & change;
+	inputDown[joy] = state;
 }
 
 void setScroll(VDPPlane plane, s16 x, s16 y){
@@ -45,7 +45,7 @@ void vInterrupt(){
 void gameLoop();
 u16 textTileLoc; u16 playerTileLoc; u16 ballTileLoc; u16 ballShadowLoc;
 
-Entity* playerEntity = NULL; Entity* playerShadow = NULL;
+Entity* playerEntity[2] = {NULL, NULL}; Entity* playerShadow[2] = {NULL, NULL};
 Entity* ballEntity = NULL; Entity* shadowEntity = NULL;
 
 int main(bool hardReset){
@@ -84,21 +84,22 @@ int main(bool hardReset){
 
 	ballEntity = addEntity(160, 64, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballTileLoc));
 
-	playerEntity = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL0, 0, 0, 0, playerTileLoc));
+	playerEntity[0] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL0, 0, 0, 0, playerTileLoc));
 	addEntity(0, 24, BHV_LINK, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, playerTileLoc + 9));
 
-	shadowEntity = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
-	playerShadow = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
-
-	addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc));
+	playerEntity[1] =addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc));
 	addEntity(0, 24, BHV_LINK, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc + 9));
+
+	shadowEntity = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
+	playerShadow[0] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
+	playerShadow[1] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
 	
 	while(1){
 		timer++;
 		//VDP_setHorizontalScroll(BG_A, timer >> 1);
 		//VDP_setVerticalScroll(BG_A, timer >> 2);
 
-		if(inputPressed & BUTTON_START)
+		if(inputPressed[0] & BUTTON_START)
 			gameState = gameState == GAME_ACTIVE ? GAME_PAUSE : GAME_ACTIVE;
 
 		if(gameState == GAME_ACTIVE)
@@ -110,7 +111,9 @@ int main(bool hardReset){
 		updateEntities();
 		VDP_updateSprites(spriteCount, DMA_QUEUE_COPY);
 
-		inputPressed = 0;
+		for(int i=0; i<4; i++){
+			inputPressed[i] = 0;
+		}
 
 		SYS_doVBlankProcess();
 	}
@@ -128,6 +131,7 @@ Vector2 playerPos = {160, 120};
 s16 playerSubPos[2] = {0, 0};
 s16 playerVel[2] = {0, 0};
 
+void updatePlayer(Entity* plr, u16 joy);
 void gameLoop(){
 	ballVel[1] -= 4;
 	ballSubPos[0] += ballVel[0]; ballSubPos[1] += ballVel[1]; ballSubPos[2] += ballVel[2]; 
@@ -144,6 +148,17 @@ void gameLoop(){
 		ballSubPos[2] -= 256 * negate(ballSubPos[2] < 0);
 	}
 
+	if(!between(ballPos.x, 12, 308)){
+		ballPos.x = ballPos.x < 160 ? 13 : 307;
+		ballSubPos[0] = 0;
+		ballVel[0] = -ballVel[0];
+	}
+	if(!between(ballPos.y, 12, 228)){
+		ballPos.y = ballPos.y < 120 ? 13 : 227;
+		ballSubPos[2] = 0;
+		ballVel[2] = -ballVel[2];
+	}
+
 	if(ballY < 0){
 		ballVel[1] = 240;
 		ballY = 0;
@@ -158,8 +173,12 @@ void gameLoop(){
 	ballEntity->pos = (Vector2){ballPos.x - 12, ballPos.y - ballY - 22};
 	shadowEntity->pos = (Vector2){ballPos.x - 12, ballPos.y - 4};
 
-	playerPos.x += ((inputDown & BUTTON_RIGHT) != 0) - ((inputDown & BUTTON_LEFT) != 0);
-	playerPos.y += ((inputDown & BUTTON_DOWN) != 0) - ((inputDown & BUTTON_UP) != 0);
-	playerEntity->pos = (Vector2){playerPos.x - 12, playerPos.y - 32};
-	playerShadow->pos = (Vector2){playerPos.x - 12, playerPos.y - 4};
+	updatePlayer(playerEntity[0], JOY_1);
+}
+
+void updatePlayer(Entity* plr, u16 joy){
+	playerPos.x += ((inputDown[joy] & BUTTON_RIGHT) != 0) - ((inputDown[joy] & BUTTON_LEFT) != 0);
+	playerPos.y += ((inputDown[joy] & BUTTON_DOWN) != 0) - ((inputDown[joy] & BUTTON_UP) != 0);
+	plr->pos = (Vector2){playerPos.x - 12, playerPos.y - 32};
+	playerShadow[joy]->pos = (Vector2){playerPos.x - 12, playerPos.y - 4};
 }
