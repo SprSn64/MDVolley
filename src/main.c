@@ -55,6 +55,7 @@ void vInterrupt(){
 //TILE_ATTR_FULL(palette, priority, vflip, hflip, tile)
 void gameLoop();
 u16 textTileLoc; u16 playerTileLoc; u16 ballTileLoc; u16 ballShadowLoc;
+u16 freakTileLoc;
 
 Entity* playerEntity[2] = {NULL, NULL}; Entity* playerShadow[2] = {NULL, NULL};
 Entity* ballEntity = NULL; Entity* shadowEntity = NULL;
@@ -73,6 +74,8 @@ int main(bool hardReset){
 	playerTileLoc = loadTile(girlTiles, 15);
 	ballTileLoc = loadTile(ballTiles, 9);
 	ballShadowLoc = loadTile(ballShadow, 3);
+
+	freakTileLoc = loadTile(freakTiles, 9);
 
 	//VDP_loadTileData(girlJumpTiles, playerTileLoc, 15, 0);
 
@@ -109,12 +112,12 @@ int main(bool hardReset){
 	playerEntity[0] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL0, 0, 0, 0, playerTileLoc));
 	addEntity(0, 24, BHV_LINK, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, playerTileLoc + 9));
 
-	playerEntity[1] =addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc));
-	addEntity(0, 24, BHV_LINK, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc + 9));
+	playerEntity[1] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL1, 0, 0, 0, freakTileLoc));
+	//addEntity(0, 24, BHV_LINK, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL1, 0, 0, 1, playerTileLoc + 9));
 
 	shadowEntity = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
 	playerShadow[0] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
-	playerShadow[1] = addEntity(160, 120, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
+	playerShadow[1] = addEntity(160, 140, BHV_NONE, SPRITE_SIZE(3, 1), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballShadowLoc));
 	
 	while(1){
 		timer++;
@@ -152,6 +155,7 @@ s16 ballVel[3] = {0, 0, 0};
 Vector2 playerPos = {160, 120};
 s16 playerSubPos[2] = {0, 0};
 s16 playerVel[2] = {0, 0};
+u8 hitTimer = 0;
 
 void updatePlayer(Entity* plr, u16 joy);
 void gameLoop(){
@@ -186,7 +190,8 @@ void gameLoop(){
 		ballY = 0;
 	}
 
-	if(between(ballPos.x - playerPos.x, -12, 12) && between(ballPos.y - playerPos.y, -12, 12) && ballY < 16 && ballVel[1] < 0){
+	if(between(ballPos.x - playerPos.x, -12, 12) && between(ballPos.y - playerPos.y, -12, 12) && ballY < 16){
+		hitTimer = 32;
 		ballVel[1] = 360; 
 		ballVel[0] += (ballPos.x - playerPos.x) * 16; ballVel[2] += (ballPos.y - playerPos.y) * 16;
 		ballY = 16;
@@ -199,8 +204,36 @@ void gameLoop(){
 }
 
 void updatePlayer(Entity* plr, u16 joy){
+	/*playerVel[0] += ((inputDown[joy] & BUTTON_RIGHT) != 0) - ((inputDown[joy] & BUTTON_LEFT) != 0);
+	playerVel[1] += ((inputDown[joy] & BUTTON_DOWN) != 0) - ((inputDown[joy] & BUTTON_UP) != 0);
+
+	playerSubPos[0] += playerVel[0]; playerSubPos[1] += playerVel[1];
+	if(!between(playerSubPos[0], -255, 255)){
+		playerPos.x += negate(playerSubPos[0] < 0);
+		playerSubPos[0] -= 256 * negate(playerSubPos[0] < 0);
+	}
+	if(!between(playerSubPos[1], -255, 255)){
+		playerPos.y += negate(playerSubPos[1] < 0);
+		playerSubPos[1] -= 256 * negate(playerSubPos[1] < 0);
+	}
+	playerVel[0] += playerVel[0] != 0 ? negate(playerVel[0] > 0) : 0;
+	playerVel[1] += playerVel[1] != 0 ? negate(playerVel[1] > 0) : 0;
+	*/
+
 	playerPos.x += ((inputDown[joy] & BUTTON_RIGHT) != 0) - ((inputDown[joy] & BUTTON_LEFT) != 0);
 	playerPos.y += ((inputDown[joy] & BUTTON_DOWN) != 0) - ((inputDown[joy] & BUTTON_UP) != 0);
-	plr->pos = (Vector2){playerPos.x - 12, playerPos.y - 32};
+
+	plr->pos = (Vector2){playerPos.x - 12, playerPos.y - 32 - 12 * (hitTimer > 0)};
 	playerShadow[joy]->pos = (Vector2){playerPos.x - 12, playerPos.y - 4};
+
+	if(hitTimer > 0){
+		hitTimer -= 1;
+		if(hitTimer == 0){
+			VDP_loadTileData(girlTiles, playerTileLoc, 12, 0);
+			plr->next->size = SPRITE_SIZE(3, 1);
+		}else{
+			VDP_loadTileData(girlJumpTiles, playerTileLoc, 15, 0);
+			plr->next->size = SPRITE_SIZE(3, 2);
+		}
+	}
 }
