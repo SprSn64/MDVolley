@@ -141,4 +141,15 @@ const u32 ballShadow[8 * 3] = {
 	0x00000000,
 };
 
+const u32 netTiles[8 * 1] = {
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+	0x22,
+};
+
 #endif

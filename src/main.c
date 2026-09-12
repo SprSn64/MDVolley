@@ -31,14 +31,25 @@ void setScroll(VDPPlane plane, s16 x, s16 y){
 	VDP_setVerticalScroll(plane, y);
 }
 
-#define HINT_COUNT 1
+#define HINT_COUNT 2
 u16 currScanline = 0;
+s16 subScroll = 0;
 void hInterrupt(){
 	currScanline += HINT_COUNT;
+
+	//subScroll += 4 * HINT_COUNT;
+
+	if(currScanline >= 128)
+		VDP_setHorizontalScroll(BG_A, currScanline + 344);
+
+	if(between(currScanline, 104, 168))
+		VDP_setHorizontalScroll(BG_B, currScanline + 368);
 }
 
 void vInterrupt(){
+	VDP_setHorizontalScroll(BG_A, 0); VDP_setHorizontalScroll(BG_B, 0);
 	currScanline = 0;
+	//subScroll = 0;
 }
 
 //TILE_ATTR_FULL(palette, priority, vflip, hflip, tile)
@@ -71,18 +82,27 @@ int main(bool hardReset){
 	drawText(BG_A, (Vector2){0, 4}, "YOU FUCKING IDIOT", PAL3, textTileLoc, 33);
 
 	//Draw Palettes
+
 	for(int i=0; i<16 * 4; i++){
 		VDP_setTileMapXY(BG_A, TILE_ATTR_FULL(i>>4, 0, 0, 0, i&15), i&15, i>>4);
 	}
 
-	/*SYS_disableInts();
+	//40x28
+	VDP_loadTileData(netTiles, 64, 1, 0);
+	fillRect(BG_A, 3, (Vector2){0, 16}, (Vector2){40, 12});
+	fillRect(BG_A, 1, (Vector2){2, 18}, (Vector2){36, 8});
+
+	fillRect(BG_B, TILE_ATTR_FULL(PAL0, 1, 0, 0, 64), (Vector2){20, 14}, (Vector2){1, 12});
+	fillRect(BG_B, TILE_ATTR_FULL(PAL0, 1, 0, 1, 64), (Vector2){21, 14}, (Vector2){1, 12});
+
+	SYS_disableInts();
 	{
 		VDP_setHIntCounter(HINT_COUNT - 1);
 		VDP_setHInterrupt(1);
 		SYS_setVIntCallback(vInterrupt);
 		SYS_setHIntCallback(hInterrupt);
 	}
-	SYS_enableInts();*/
+	SYS_enableInts();
 
 	ballEntity = addEntity(160, 64, BHV_NONE, SPRITE_SIZE(3, 3), TILE_ATTR_FULL(PAL0, 0, 0, 0, ballTileLoc));
 

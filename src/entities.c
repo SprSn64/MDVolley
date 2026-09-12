@@ -46,6 +46,7 @@ void freeEntity(Entity* item){
 Entity* linkTarget = NULL;
 void updateEntity(Entity* item){
 	VDP_setSpriteAttribut(item->index, item->tile);
+	VDP_setSpriteSize(item->index, item->size);
 
 	if(item->bhv == BHV_LINK && linkTarget){
 		VDP_setSpritePosition(item->index, linkTarget->pos.x + item->pos.x, linkTarget->pos.y + item->pos.y);
