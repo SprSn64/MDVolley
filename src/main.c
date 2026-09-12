@@ -59,9 +59,11 @@ int main(bool hardReset){
 
 	loadTile(solidTiles, 16);
 	textTileLoc = loadTile(textTiles, 64);
-	playerTileLoc = loadTile(girlTiles, 12);
+	playerTileLoc = loadTile(girlTiles, 15);
 	ballTileLoc = loadTile(ballTiles, 9);
 	ballShadowLoc = loadTile(ballShadow, 3);
+
+	//VDP_loadTileData(girlJumpTiles, playerTileLoc, 15, 0);
 
 	//Load Palettes
 	PAL_setColors(0, testPalettes, 64);
