@@ -20,7 +20,7 @@ typedef enum GameStates{
 } GameStates;
 
 typedef struct Vector2{
-	u16 x, y;
+	s16 x, y;
 } Vector2;
 
 typedef struct Entity{
@@ -33,5 +33,25 @@ typedef struct Entity{
 	struct Entity *prev;
 	struct Entity *next;
 } Entity;
+
+typedef enum CharController{
+	CHARCONTROL_NONE = 0x00;
+
+	CHARCONTROL_JOY1 = 0x01;
+	CHARCONTROL_JOY2 = 0x02;
+	CHARCONTROL_JOY3 = 0x03;
+	CHARCONTROL_JOY4 = 0x04;
+
+	CHARCONTROL_CPU = 0xFF;
+} CharController;
+
+typedef struct PlayerChar{
+	Entity *plrEntity;
+	Entity *shadowEntity;
+	u8 controller;
+
+	Vector2 pos, subPos, vel, sprOffset;
+	u8 hitTimer;
+}
 
 #endif
